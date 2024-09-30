@@ -16,7 +16,7 @@ use uzkge::{
 use crate::error::ShuffleError;
 use crate::{MaskedCard as Masked, };
 use crate::card_maps::CARD_MAPS;
-
+use crate::keygen::{Keypair as CoreKeypair};
 pub type ShuffleResult<T> =Result<T,ShuffleError>;
 
 #[derive(Serialize, Deserialize, Clone,Debug)]
@@ -52,6 +52,16 @@ pub struct ShuffledCardsWithProof {
     pub cards: Vec<MaskedCard>,
     /// hex string
     pub proof: String,
+}
+
+#[derive(Serialize, Deserialize,Debug,Clone)]
+pub struct Keypair {
+    /// 0xHex (U256)
+    pub sk: String,
+    /// 0xHex (U256)
+    pub pk: String,
+    /// public key uncompress x, y
+    pub pkxy: (String, String),
 }
 
 
@@ -186,4 +196,18 @@ pub fn masked_card_deserialize(masked: &MaskedCard) -> ShuffleResult<Masked> {
     let e2 = uncompress_to_point(&masked.0, &masked.1)?;
     let e1 = uncompress_to_point(&masked.2, &masked.3)?;
     Ok(Masked { e1, e2 })
+}
+
+pub fn generate_key_preset(sk : String, pk: String, x : String,y: String) -> ShuffleResult<Keypair> {
+    let mut prng = default_prng();
+    let keypair = CoreKeypair::generate(&mut prng);
+    let _pkxy = point_to_uncompress(&keypair.public, true);
+
+    let ret = Keypair {
+        sk: sk,
+        pk: pk,
+        pkxy: (x,y),
+    };
+
+    Ok(ret)
 }

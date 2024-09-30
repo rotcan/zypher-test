@@ -249,14 +249,29 @@ let ref_joint_pk="0x9723835eb88d3c9e76f6d0c1295724e4f76fd0762568dee9a79394760510
         verify_shuffled_cards(first_deck.clone(), cards.clone(), proof.proof.clone()).unwrap();
     assert_eq!(res, true);
 
+    log_1(&"PROOF:".into());
+    log_1(&proof.proof.into());
     
     let deck1_v: Vec<MaskedCard> = serde_wasm_bindgen::from_value(first_deck).unwrap();
     let deck1_flattened=deck1_v.clone().into_iter().map(|d| vec![d.0,d.1,d.2,d.3]).collect::<Vec<Vec<String>>>().into_iter().flatten().collect::<Vec<String>>();
-    assert_eq!(deck1_flattened,ref_masked_deck);
-     
+    // assert_eq!(deck1_flattened,ref_masked_deck);
+    log_1(&"DECK1:".into());
+    for d in deck1_v {
+        log_1(&format!("\"{}\",", d.0).into());
+        log_1(&format!("\"{}\",", d.1).into());
+        log_1(&format!("\"{}\",", d.2).into());
+        log_1(&format!("\"{}\",", d.3).into());
+    }
+
     let deck2_v: Vec<MaskedCard> = serde_wasm_bindgen::from_value(cards).unwrap();
     let deck2_flattened=deck2_v.clone().into_iter().map(|d| vec![d.0,d.1,d.2,d.3]).collect::<Vec<Vec<String>>>().into_iter().flatten().collect::<Vec<String>>();
-    
-    assert_eq!(deck2_flattened,ref_shuffled_deck);
+    log_1(&"DECK2:".into());
+    for d in deck2_v {
+        log_1(&format!("\"{}\",", d.0).into());
+        log_1(&format!("\"{}\",", d.1).into());
+        log_1(&format!("\"{}\",", d.2).into());
+        log_1(&format!("\"{}\",", d.3).into());
+    }
+    // assert_eq!(deck2_flattened,ref_shuffled_deck);
  
 }

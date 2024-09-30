@@ -1,18 +1,30 @@
 # zypher-test
 Code to test zypher shuffle verifier in js and rust sdk
 
-To test js code
+# To test js code
 cd contracts
-# to install dependencies
+
+To install dependencies
 npm i
-# to compile the contracts
+
+To compile the contracts
 npx hardhat compile
-# to run tests
+
+To run tests
 npm test
 
-For rust 
+# For rust 
 cd zshuffle-wasm
-# build
+
+build
 wasm-pack build
-# run test
+
+run test
 wasm-pack test --node
+
+
+# reveal_card_with_snark test
+To test reveal_card_with_snark in bevy run below
+cargo run -p bevy-test
+To test reveal_card_with_snark in unit test run below
+cargo run test_wasm -p zshuffle -- --nocapture

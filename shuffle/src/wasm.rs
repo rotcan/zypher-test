@@ -6,14 +6,14 @@ use std::sync::Mutex;
 use once_cell::sync::Lazy;
 use crate::gen_params::{gen_shuffle_prover_params,params::refresh_prover_params_public_key};
 use crate::error::ShuffleError;
-use crate::utils::{default_prng,
+use crate::utils::{default_prng,point_to_hex,
     point_to_uncompress,hex_to_point,masked_card_serialize,masked_card_deserialize,hex_to_scalar,
     index_to_point,point_to_index,shuffle_proof_to_hex,shuffle_proof_from_hex,scalar_to_hex,uncompress_to_point,
     MaskedCardWithProof,MaskedCard,ShuffledCardsWithProof,ShuffleResult,RevealedCardWithSnarkProof,RevealedCardWithProof,};
 use std::fmt::Display;
 use crate::card_maps::CARD_MAPS;
-use ark_ed_on_bn254::{EdwardsAffine, EdwardsProjective, Fq, Fr};
-use ark_ff::{BigInteger, One, PrimeField};
+use ark_ed_on_bn254::{ Fr};
+use ark_ff::{  One};
 use crate::{
     mask::mask,
     build_cs::{prove_shuffle, verify_shuffle},
@@ -217,7 +217,9 @@ pub fn reveal_card_with_snark(sk: String, card: MaskedCard) -> ShuffleResult<Rev
         .expect("Missing PARAMS, need init & refresh pk");
 
     let circuit = RevealCircuit::new(&keypair.secret, &masked, &reveal_card);
+    println!("before proof generation");
     let proof = Groth16::<ark_bn254::Bn254>::prove(&prover_params, circuit, &mut prng).unwrap();
+    println!("after proof generation");
     drop(params);
 
     let a = proof.a.xy().unwrap();
@@ -259,4 +261,83 @@ pub fn unmask_card(sk: String, card: MaskedCard, reveals:  Vec<(String, String)>
 
     let unmasked_card = unmask(&masked, &reveal_cards).map_err(wasm_error_value)?;
     point_to_index(unmasked_card)
+}
+
+
+pub fn aggregate_keys(publics:  Vec<String>) -> ShuffleResult<String> {
+    let mut pks = vec![];
+    for bytes in publics {
+        pks.push(hex_to_point(&bytes)?);
+    }
+    let pk = core_aggregate_keys(&pks).map_err(wasm_error_value)?;
+    Ok(point_to_hex(&pk, true))
+}
+
+
+
+#[cfg(test)]
+pub mod tests{
+    use chrono::Utc;
+    use super::*;
+    const CARD_NUM: i32 = 20;
+    use crate::utils::generate_key_preset;
+
+
+    #[test]
+    fn test_wasm(){
+
+        init_prover_key(CARD_NUM).unwrap();
+
+        let key1 = generate_key_preset("0x020b31a672b203b71241031c8ea5e5a4ef133c57bcde822ac514e8a1c7f89124".to_owned(),
+        "0xada2d401ec3113060a049b5472550965f59423eaaeec3133dd33628e5df50491".to_owned(),
+        "0x27f9bc87a7fe674c14532699864907156753a8271a6e97b8f8b99a474ad2afdd".to_owned(),
+        "0x1104f55d8e6233dd3331ecaeea2394f565095572549b040a061331ec01d4a2ad".to_owned(),
+        ).unwrap();
+        let key2 = generate_key_preset("0x02d75fed474808cbacf1ff1e2455a30779839cfb32cd79e2020aa603094b80b7".to_owned(),
+        "0x52bd82819071b9b913aacfccc6657e5226d1aebd5e5ec4fbdea0b6f5bb2bdf12".to_owned(),
+        "0x0fc2c87764783cdc883744c16712654ce3d0fccbea70c9ce379a8bc7f412f006".to_owned(),
+        "0x12df2bbbf5b6a0defbc45e5ebdaed126527e65c6cccfaa13b9b971908182bd52".to_owned(),
+        ).unwrap();
+        // let key1: Keypair = serde_wasm_bindgen::from_value(key1).unwrap();
+        // let key2: Keypair = serde_wasm_bindgen::from_value(key2).unwrap();
+        println!("key1={:?}",key1);
+        
+        let joint = vec![key1.pk, key2.pk]; // key3.pk, key4.pk
+         
+        let joint_pk = aggregate_keys(joint).unwrap();
+        println!("joint_pk={:?}",joint_pk);
+         
+        let _pkc = refresh_joint_key(joint_pk.clone(), CARD_NUM).unwrap();
+
+        let decks = init_masked_cards(joint_pk.clone(), CARD_NUM).unwrap();
+        // let decks: Vec<MaskedCardWithProof> = serde_wasm_bindgen::from_value(init_deck).unwrap();
+        let deck_cards: Vec<MaskedCard> = decks.iter().map(|v| v.card.clone()).collect();
+        // let first_deck = serde_wasm_bindgen::to_value(&deck_cards).unwrap();
+
+        let proof: ShuffledCardsWithProof = shuffle_cards(joint_pk.clone(), deck_cards.clone()).unwrap();
+        // let proof: ShuffledCardsWithProof = serde_wasm_bindgen::from_value(proof).unwrap();
+        let cards = proof.cards.clone();
+        let res =
+            verify_shuffled_cards(deck_cards.clone(), cards.clone(), proof.proof.clone()).unwrap();
+        assert_eq!(res, true);
+
+         
+        let start_time = Utc::now().time();
+        init_reveal_key();
+        // let reveal_item = serde_wasm_bindgen::to_value(&deck2_v[0]).unwrap();
+        let reveal_item=cards[0].clone();
+        let ret = reveal_card_with_snark(key2.sk.clone(),reveal_item).unwrap();
+        
+        let target=MaskedCard("0x0bbb65c1461f6b6622f4fcc71f24eca08df3789e4318c1d1f23628a73839d852".to_owned(),
+        "0x2bac4f082c8e1482be425cc89eaf2d347b51aded2901937e6e7bfd0131b14ee2".to_owned(),
+        "0x0139327aac5ec9067c9509587200e581a7b86c3a0338607b62ee8853bf2ee48f".to_owned(),
+        "0x20057633ca7fab6c6834ec0d5bf96f8149c061027ecf0dee6c81777a0076c3a9".to_owned());
+        let _snark_proof= reveal_card_with_snark("0x020b31a672b203b71241031c8ea5e5a4ef133c57bcde822ac514e8a1c7f89124".to_owned()
+        ,target).unwrap();
+        println!("ret.card={:?} proof={:?}",ret.card,ret.snark_proof);
+        let end_time = Utc::now().time();
+        let diff = end_time - start_time;
+        println!("time diff = {}",format!("time in reveal={}",diff.num_seconds()));
+
+    }
 }
