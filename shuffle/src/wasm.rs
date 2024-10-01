@@ -218,7 +218,7 @@ pub fn reveal_card_with_snark(sk: String, card: MaskedCard) -> ShuffleResult<Rev
 
     let circuit = RevealCircuit::new(&keypair.secret, &masked, &reveal_card);
     println!("before proof generation");
-    let proof = Groth16::<ark_bn254::Bn254>::prove(&prover_params, circuit, &mut prng).unwrap();
+    let proof = Groth16::<ark_bn254::Bn254>::prove(&prover_params, circuit, &mut prng).expect("Failed at proof generation");
     println!("after proof generation");
     drop(params);
 

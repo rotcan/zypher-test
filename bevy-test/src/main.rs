@@ -1,16 +1,33 @@
+mod compute;
+
 use bevy::prelude::*;
 use zshuffle::{wasm::*,utils::{MaskedCard,}};
+use crate::compute::{init_compute_resource,ComputeResultResponse,ComputeChannelResource};
 
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_systems(Startup,test_snark)
+        .insert_resource(init_compute_resource())
+        .add_systems(Startup,spawn_async_task)
+        .add_systems(Update,await_async_task)
         .run();
 }
 
 
+pub fn spawn_async_task(compute_channel: Res<ComputeChannelResource>,){
+    compute_channel.process_async_task();
+}
 
-fn test_snark() {
+pub fn await_async_task(  compute_channel: Res<ComputeChannelResource>,){
+    match compute_channel.recv_compute(){
+        Ok(ComputeResultResponse{result})=>{println!("await_async_task done {:?}",result)},
+        Err(err)=>{if err!="empty" {
+            println!("await_async_task error {:?}",err)
+        }}
+    };
+}
+
+pub fn test_snark()->String {
     //Test
     info!("testing snarks");
     init_prover_key(20).unwrap();
@@ -22,5 +39,5 @@ fn test_snark() {
     init_reveal_key();
     let _snark_proof= reveal_card_with_snark("0x020b31a672b203b71241031c8ea5e5a4ef133c57bcde822ac514e8a1c7f89124".to_owned()
     ,target).expect("Failed to get proof");
-   
+    return "1".to_string()
 }
