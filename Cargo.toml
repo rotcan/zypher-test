@@ -1,5 +1,6 @@
 [workspace]
-members = [ "bevy-test",
+members = [ "bevy-test", "groth-test", "shuffle-service",
+  "zypher-reveal-service",
   "shuffle","zshuffle-wasm"]
 resolver = "2"
 
@@ -7,6 +8,7 @@ resolver = "2"
 name = "zypher-test"
 version = "0.1.0"
 edition = "2021"
+authors = ["rahul srivastava<rahul.srivastava0587@gmail.com>"]
 
 [workspace.dependencies]
 async-channel = "2.3.1"
@@ -36,3 +38,8 @@ structopt =  "0.3"
 hex = "0.4.3"
 wasm-bindgen={version="=0.2.92"}
 serde-wasm-bindgen = "0.6.5"
+reqwest = {version="0.12.5",features=["json"]}
+schemars = "0.8"
+zshuffle={path="./shuffle"}
+rocket={version="0.5.0-rc.4", default-features=false,features=["json"]}
+rocket_okapi={version="0.8.0",features=["swagger","secrets"]}
