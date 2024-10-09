@@ -4,3 +4,8 @@
 gtoken
 .gitconfig
 .git-credentials
+zypher-reveal-service
+groth-test
+contracts
+zshuffle-wasm
+.cargo
