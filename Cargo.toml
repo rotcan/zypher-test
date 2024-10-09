@@ -1,7 +1,6 @@
 [workspace]
-members = [ "bevy-test", "groth-test", "shuffle-service",
-  "zypher-reveal-service",
-  "shuffle","zshuffle-wasm"]
+members = [ "bevy-test", "shuffle-service",
+  "shuffle"]
 resolver = "2"
 
 [workspace.package]
