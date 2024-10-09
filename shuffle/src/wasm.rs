@@ -13,6 +13,7 @@ use crate::utils::{default_prng,point_to_hex,
 use std::fmt::Display;
 use crate::card_maps::CARD_MAPS;
 use ark_ed_on_bn254::{ Fr};
+use ark_bn254::Bn254;
 use ark_ff::{  One};
 use crate::{
     mask::mask,
@@ -218,7 +219,7 @@ pub fn reveal_card_with_snark(sk: String, card: MaskedCard) -> ShuffleResult<Rev
 
     let circuit = RevealCircuit::new(&keypair.secret, &masked, &reveal_card);
     println!("before proof generation");
-    let proof = Groth16::<ark_bn254::Bn254>::prove(&prover_params, circuit, &mut prng).expect("Failed at proof generation");
+    let proof = Groth16::<Bn254>::prove(&prover_params, circuit, &mut prng).expect("Failed at proof generation");
     println!("after proof generation");
     drop(params);
 
